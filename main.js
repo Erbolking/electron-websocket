@@ -1,5 +1,6 @@
 // Modules to control application life and create native browser window
 const {app, BrowserWindow} = require('electron')
+const { exec } = require('child_process');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -24,10 +25,37 @@ function createWindow () {
   })
 }
 
+function initSocket() {
+  const server = require('http').createServer();
+  const io = require('socket.io')(server);
+  io.on('connection', function (client) {
+    client.on('command', function (command, fn) {
+
+      if (!command) {
+        fn('command can\'t be empty');
+        return;
+      }
+
+      // execute command and send result back
+      exec(command, (err, stdout, stderr) => {
+        if (err) {
+          fn(stderr);
+        }
+
+        fn(stdout);
+      });
+    });
+  });
+  server.listen(3000);
+  console.log('lister 3000')
+}
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', createWindow)
+// app.on('ready', createWindow)
+app.on('ready', initSocket)
+
 
 // Quit when all windows are closed.
 app.on('window-all-closed', function () {
